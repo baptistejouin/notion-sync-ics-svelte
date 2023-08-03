@@ -1,16 +1,11 @@
 import { ICalEventBusyStatus } from 'ical-generator';
 import type { QueryDatabaseParameters } from '@notionhq/client/build/src/api-endpoints';
+import { readFileSync } from 'fs';
+
+const config = JSON.parse(readFileSync('config.json', 'utf8'));
 
 export default {
-	filter: {
-		and: [
-			{ property: 'Status', select: { does_not_equal: 'Completed' } },
-			{ property: 'Status', select: { does_not_equal: 'Nope' } },
-			{ property: 'Type', select: { equals: 'Task' } }
-		]
-	},
-	dateProperty: 'Scheduled',
-	titleProperty: 'Name',
+	...config,
 	busy: ICalEventBusyStatus.FREE
 } as {
 	filter: Readonly<QueryDatabaseParameters['filter']>;
