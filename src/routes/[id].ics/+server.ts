@@ -3,7 +3,7 @@ import { Client } from '@notionhq/client';
 import type { QueryDatabaseResponse } from '@notionhq/client/build/src/api-endpoints';
 
 import config from '$lib/config';
-import { ACCESS_KEY, NOTION_TOKEN, LANG, COMPANY } from '$env/static/private';
+import { ACCESS_KEYS, NOTION_TOKEN, LANG, COMPANY } from '$env/static/private';
 import type { RequestHandler } from './$types';
 import { getFirstContentBlock } from '$lib/notion-utils';
 
@@ -28,9 +28,11 @@ const notion = new Client({ auth: NOTION_TOKEN });
 
 export const GET: RequestHandler = async ({ params, url }) => {
 	const secret = url.searchParams.get('secret');
-	if (secret !== ACCESS_KEY) {
+	if (!ACCESS_KEYS.split(',').includes(secret)) {
 		return new Response('Forbidden', { status: 403 });
 	}
+	console.log('secret', secret);
+	
 
 	const { id } = params;
 
