@@ -3,7 +3,7 @@ import { Client } from '@notionhq/client';
 import type { QueryDatabaseResponse } from '@notionhq/client/build/src/api-endpoints';
 
 import config from '$lib/config';
-import { ACCESS_KEY, NOTION_TOKEN, MAX_BLOCK_PAGE_SIZE, LANG, COMPANY } from '$env/static/private';
+import { ACCESS_KEY, NOTION_TOKEN, LANG, COMPANY } from '$env/static/private';
 import type { RequestHandler } from './$types';
 import { getFirstContentBlock } from '$lib/notion-utils';
 
@@ -64,7 +64,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 				title: object.properties[config.titleProperty].title[0].text.content,
 				date: object.properties[config.dateProperty].date,
 				emoji: (object.icon && object.icon.type === "emoji") ? object.icon.emoji : null,
-				description: await getFirstContentBlock(notion, object.id, Number(MAX_BLOCK_PAGE_SIZE)),
+				description: await getFirstContentBlock(notion, object.id),
 				url: object.url
 			}
 		] as NotionDatabaseEntry;

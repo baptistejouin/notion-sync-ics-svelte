@@ -1,11 +1,9 @@
 import { ICalEventBusyStatus } from 'ical-generator';
 import type { QueryDatabaseParameters } from '@notionhq/client/build/src/api-endpoints';
-import { readFileSync } from 'fs';
-
-const config = JSON.parse(readFileSync('config.json', 'utf8'));
+import { CONFIG_JSON } from '$env/static/private';
 
 export default {
-	...config,
+	...JSON.parse(CONFIG_JSON),
 	busy: ICalEventBusyStatus.FREE
 } as {
 	filter: Readonly<QueryDatabaseParameters['filter']>;

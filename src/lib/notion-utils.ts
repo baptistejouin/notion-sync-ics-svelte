@@ -1,13 +1,14 @@
+import { MAX_BLOCK_PAGE_SIZE } from '$env/static/private';
 import type { Client } from '@notionhq/client';
 import type {
 	BlockObjectResponse,
 	RichTextItemResponse
 } from '@notionhq/client/build/src/api-endpoints';
 
-export const getFirstContentBlock = async (client: Client, blockId: string, blocksPageSize = 1) => {
+export const getFirstContentBlock = async (client: Client, blockId: string, blocksPageSize = MAX_BLOCK_PAGE_SIZE) => {
 	const blocks = await client.blocks.children.list({
 		block_id: blockId,
-		page_size: blocksPageSize
+		page_size: Number(blocksPageSize)
 	});
 
 	const partText = [];
