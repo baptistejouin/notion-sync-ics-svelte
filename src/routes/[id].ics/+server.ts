@@ -15,12 +15,12 @@ type NotionDatabaseEntry = {
 	date: {
 		start: string;
 		end: string | null;
-		time_zone: string | null
+		time_zone: string | null;
 	};
 	emoji: string | null;
 	description: string | null;
 	url: string;
-}[]
+}[];
 
 export const trailingSlash = 'never';
 
@@ -31,8 +31,6 @@ export const GET: RequestHandler = async ({ params, url }) => {
 	if (!ACCESS_KEYS.split(',').includes(secret)) {
 		return new Response('Forbidden', { status: 403 });
 	}
-	console.log('secret', secret);
-	
 
 	const { id } = params;
 
@@ -53,43 +51,52 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		databaseEntries.push(...query.results);
 	}
 
-	const filtered = await Promise.all(databaseEntries.map(async (object) => {
-		if (object.properties[config.dateProperty].date === null) {
-			return [];
-		}
-
-		return [
-			{
-				uid: object.id,
-				created_time: object.created_time,
-				last_edited_time: object.last_edited_time,
-				title: object.properties[config.titleProperty].title[0].text.content,
-				date: object.properties[config.dateProperty].date,
-				emoji: (object.icon && object.icon.type === "emoji") ? object.icon.emoji : null,
-				description: await getFirstContentBlock(notion, object.id),
-				url: object.url
+	const filtered = await Promise.all(
+		databaseEntries.map(async (object) => {
+			if (object.properties[config.dateProperty].date === null) {
+				return [];
 			}
-		] as NotionDatabaseEntry;
-	}));
 
+			return [
+				{
+					uid: object.id,
+					created_time: object.created_time,
+					last_edited_time: object.last_edited_time,
+					title: object.properties[config.titleProperty].title[0].text.content,
+					date: object.properties[config.dateProperty].date,
+					emoji: object.icon && object.icon.type === 'emoji' ? object.icon.emoji : null,
+					description: await getFirstContentBlock(notion, object.id),
+					url: object.url
+				}
+			] as NotionDatabaseEntry;
+		})
+	);
 
 	const calendar = ical({
 		name: databaseMetadata.title[0].text.content,
 		prodId: { company: COMPANY, language: LANG, product: 'notion-ics' }
 	});
 	filtered.flat().forEach((event) => {
+		const dateStart = new Date(event.date.start);
+		const dateEnd = new Date(event.date.end ?? event.date.start);
+
+		const isFullDay =
+			event.date.start.length === 10 && (!event.date.end || event.date.end.length === 10);
 
 		calendar.createEvent({
 			id: event.uid,
 			summary: event.emoji ? `${event.emoji} ${event.title}` : event.title,
-			start: new Date(event.date.start),
-			end: new Date(Date.parse(event.date.end ?? event.date.start) + 86400000), // end date is exclusive, so add 1 day
+			start: dateStart,
+			end:
+				dateStart === dateEnd || (event.date.end && isFullDay)
+					? new Date(dateEnd.getTime() + 86400000)
+					: dateEnd,
+			allDay: isFullDay,
 			description: event.description,
 			url: event.url,
 			lastModified: new Date(event.last_edited_time),
 			created: new Date(event.created_time),
-			allDay: true,
-			busystatus: config.busy,
+			busystatus: config.busy
 		});
 	});
 
