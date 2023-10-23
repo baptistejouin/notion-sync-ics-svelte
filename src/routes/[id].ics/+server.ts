@@ -25,12 +25,12 @@ type NotionDatabaseEntry = {
 
 type ModulePageProperties = PageObjectResponse & {
 	properties: {
-		Module: {
+		Module?: {
 			select: {
 				name: string
 			}
 		},
-		Name: {
+		Name?: {
 			title: {
 				plain_text: string
 			}[]
@@ -85,7 +85,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 					emoji: object.icon && object.icon.type === 'emoji' ? object.icon.emoji : null,
 					description: await getFirstContentBlock(notion, object.id),
 					url: object.url,
-					location: "test"
+					location: modules.properties.Module?.select.name || ""
 				}
 			] as NotionDatabaseEntry;
 		})
