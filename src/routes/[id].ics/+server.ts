@@ -85,7 +85,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 					emoji: object.icon && object.icon.type === 'emoji' ? object.icon.emoji : null,
 					description: await getFirstContentBlock(notion, object.id),
 					url: object.url,
-					location: modules.properties.Module.select.name
+					location: "test"
 				}
 			] as NotionDatabaseEntry;
 		})
