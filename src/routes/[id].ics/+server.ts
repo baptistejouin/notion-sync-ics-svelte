@@ -72,8 +72,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			if (object.properties[config.dateProperty].date === null) {
 				return [];
 			}
-
-			const modules = await getRelativePageProperties(notion, object.id) as ModulePageProperties;
+			
+			const modules = await getRelativePageProperties(notion, object.properties["Module"].relation[0].id) as ModulePageProperties;
 
 			return [
 				{
