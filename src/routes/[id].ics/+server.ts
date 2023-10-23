@@ -1,11 +1,11 @@
 import ical from 'ical-generator';
 import { Client } from '@notionhq/client';
-import type { QueryDatabaseResponse } from '@notionhq/client/build/src/api-endpoints';
+import type { PageObjectResponse, QueryDatabaseResponse } from '@notionhq/client/build/src/api-endpoints';
 
 import config from '$lib/config';
 import { ACCESS_KEYS, NOTION_TOKEN, LANG, COMPANY } from '$env/static/private';
 import type { RequestHandler } from './$types';
-import { getFirstContentBlock } from '$lib/notion-utils';
+import { getFirstContentBlock, getRelativePageProperties } from '$lib/notion-utils';
 
 type NotionDatabaseEntry = {
 	uid: string;
@@ -20,7 +20,23 @@ type NotionDatabaseEntry = {
 	emoji: string | null;
 	description: string | null;
 	url: string;
+	location: string | null;
 }[];
+
+type ModulePageProperties = PageObjectResponse & {
+	properties: {
+		Module: {
+			select: {
+				name: string
+			}
+		},
+		Name: {
+			title: {
+				plain_text: string
+			}[]
+		}
+	}
+}
 
 export const trailingSlash = 'never';
 
@@ -57,6 +73,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 				return [];
 			}
 
+			const modules = await getRelativePageProperties(notion, object.id) as ModulePageProperties;
+
 			return [
 				{
 					uid: object.id,
@@ -66,7 +84,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 					date: object.properties[config.dateProperty].date,
 					emoji: object.icon && object.icon.type === 'emoji' ? object.icon.emoji : null,
 					description: await getFirstContentBlock(notion, object.id),
-					url: object.url
+					url: object.url,
+					location: `${modules.properties.Name.title[0].plain_text} - ${modules.properties.Module.select.name}`
 				}
 			] as NotionDatabaseEntry;
 		})
@@ -96,7 +115,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			url: event.url,
 			lastModified: new Date(event.last_edited_time),
 			created: new Date(event.created_time),
-			busystatus: config.busy
+			busystatus: config.busy,
+			location: event.location
 		});
 	});
 
