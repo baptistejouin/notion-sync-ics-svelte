@@ -24,16 +24,24 @@ type NotionDatabaseEntry = {
 }[];
 
 type ModulePageProperties = PageObjectResponse & {
+	icon: {
+		emoji?: string,
+	},
 	properties: {
-		Module?: {
+		Module: {
+			id: string,
 			select: {
-				name: string
+				id: string,
+				name: string,
 			}
 		},
-		Name?: {
-			title: {
-				plain_text: string
-			}[]
+		Name: {
+			id: string,
+			title: [
+				{
+					plain_text: string,
+				}
+			]
 		}
 	}
 }
@@ -72,8 +80,9 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			if (object.properties[config.dateProperty].date === null) {
 				return [];
 			}
-			
-			const modules = await getRelativePageProperties(notion, object.properties["Module"].relation[0].id) as ModulePageProperties;
+
+			const modulePage = object.properties["Module"]?.relation.length ? await getRelativePageProperties(notion, object.properties["Module"].relation[0].id) as ModulePageProperties : null;
+			const module = modulePage ? `${modulePage.icon?.emoji ? `${modulePage.icon.emoji} ` : ""}${modulePage.properties.Module.select.name}` : null;
 
 			return [
 				{
@@ -85,7 +94,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 					emoji: object.icon && object.icon.type === 'emoji' ? object.icon.emoji : null,
 					description: await getFirstContentBlock(notion, object.id),
 					url: object.url,
-					location: modules.properties["Module"]?.select.name || ""
+					location: module,
 				}
 			] as NotionDatabaseEntry;
 		})
@@ -95,6 +104,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		name: databaseMetadata.title[0].text.content,
 		prodId: { company: COMPANY, language: LANG, product: 'notion-ics' }
 	});
+
 	filtered.flat().forEach((event) => {
 		const dateStart = new Date(event.date.start);
 		const dateEnd = new Date(event.date.end ?? event.date.start);
