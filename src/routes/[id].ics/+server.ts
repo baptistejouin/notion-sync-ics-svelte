@@ -1,11 +1,11 @@
 import ical from 'ical-generator';
 import { Client } from '@notionhq/client';
-import type { QueryDatabaseResponse } from '@notionhq/client/build/src/api-endpoints';
+import type { PageObjectResponse, QueryDatabaseResponse } from '@notionhq/client/build/src/api-endpoints';
 
 import config from '$lib/config';
 import { ACCESS_KEYS, NOTION_TOKEN, LANG, COMPANY } from '$env/static/private';
 import type { RequestHandler } from './$types';
-import { getFirstContentBlock } from '$lib/notion-utils';
+import { getFirstContentBlock, getRelativePageProperties } from '$lib/notion-utils';
 
 type NotionDatabaseEntry = {
 	uid: string;
@@ -20,7 +20,31 @@ type NotionDatabaseEntry = {
 	emoji: string | null;
 	description: string | null;
 	url: string;
+	location: string | null;
 }[];
+
+type ModulePageProperties = PageObjectResponse & {
+	icon: {
+		emoji?: string,
+	},
+	properties: {
+		Module: {
+			id: string,
+			select: {
+				id: string,
+				name: string,
+			}
+		},
+		Name: {
+			id: string,
+			title: [
+				{
+					plain_text: string,
+				}
+			]
+		}
+	}
+}
 
 export const trailingSlash = 'never';
 
@@ -57,6 +81,9 @@ export const GET: RequestHandler = async ({ params, url }) => {
 				return [];
 			}
 
+			const modulePage = object.properties["Module"]?.relation.length ? await getRelativePageProperties(notion, object.properties["Module"].relation[0].id) as ModulePageProperties : null;
+			const module = modulePage ? `${modulePage.icon?.emoji ? `${modulePage.icon.emoji} ` : ""}${modulePage.properties.Module.select.name}` : null;
+
 			return [
 				{
 					uid: object.id,
@@ -66,7 +93,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 					date: object.properties[config.dateProperty].date,
 					emoji: object.icon && object.icon.type === 'emoji' ? object.icon.emoji : null,
 					description: await getFirstContentBlock(notion, object.id),
-					url: object.url
+					url: object.url,
+					location: module,
 				}
 			] as NotionDatabaseEntry;
 		})
@@ -76,6 +104,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		name: databaseMetadata.title[0].text.content,
 		prodId: { company: COMPANY, language: LANG, product: 'notion-ics' }
 	});
+
 	filtered.flat().forEach((event) => {
 		const dateStart = new Date(event.date.start);
 		const dateEnd = new Date(event.date.end ?? event.date.start);
@@ -96,7 +125,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			url: event.url,
 			lastModified: new Date(event.last_edited_time),
 			created: new Date(event.created_time),
-			busystatus: config.busy
+			busystatus: config.busy,
+			location: event.location
 		});
 	});
 

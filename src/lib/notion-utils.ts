@@ -2,6 +2,7 @@ import { MAX_BLOCK_PAGE_SIZE } from '$env/static/private';
 import type { Client } from '@notionhq/client';
 import type {
 	BlockObjectResponse,
+	PageObjectResponse,
 	RichTextItemResponse
 } from '@notionhq/client/build/src/api-endpoints';
 
@@ -42,3 +43,7 @@ export const getFirstContentBlock = async (client: Client, blockId: string, bloc
 
 	return partText.join('\n');
 };
+
+export const getRelativePageProperties = async (client: Client, pageId: string) => {
+	return await client.pages.retrieve({ page_id: pageId }) as PageObjectResponse;
+}
